@@ -174,14 +174,14 @@ const updateEmployee = async (): Promise<void> => {
         ])
         .then((answers) => {
             const { employeeId, roleId } = answers;
-
+            const [employeeFirstName, employeeLastName] = employeeId.split(' ')
             const updateEmployeeRoleQuery = `
                 UPDATE employee
-                SET role_id = $1
-                WHERE id = $2;
+                SET role_id = (SELECT id FROM role WHERE title = $1 LIMIT 1)
+                WHERE first_name = $2 AND last_name = $3;
             `;
 
-            pool.query(updateEmployeeRoleQuery, [roleId, employeeId], (err: Error, _res: QueryResult) => {
+            pool.query(updateEmployeeRoleQuery, [roleId, employeeFirstName, employeeLastName], (err: Error, _res: QueryResult) => {
                 if (err) {
                     console.error(err);
                 } else {
