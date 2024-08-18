@@ -6,13 +6,12 @@ JOIN department ON role.department_id = department.id;
 
 -- VIEW ALL EMPLOYEES
 
--- FIX THIS
-
 SELECT 
     e.id AS id, 
     e.first_name, 
-    e.last_name, 
-    d.name AS title, 
+    e.last_name,
+    r.title AS title,
+    d.name AS department, 
     r.salary, 
     CONCAT(m.first_name, ' ', m.last_name) AS manager
 FROM 
