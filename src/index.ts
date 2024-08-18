@@ -5,23 +5,22 @@ import { pool, connectToDb } from './connection.js';
 await connectToDb();
 
 const getDepartments = async (): Promise<string[]> => {
-    const query = 'SELECT name FROM department';
+    const query = 'SELECT name FROM department;';
     const result: QueryResult = await pool.query(query);
     return result.rows.map(row => row.name);
 };
 
 const getRoles = async (): Promise<string[]> => {
-    const query = 'SELECT title FROM role';
+    const query = 'SELECT title FROM role;';
     const result: QueryResult = await pool.query(query);
     return result.rows.map(row => row.title);
 };
 
 const getManagers = async (): Promise<string[]> => {
     const query = `
-        SELECT e.first_name || ' ' || e.last_name AS manager_name
-        FROM employee e
-        JOIN role r ON e.role_id = r.id
-        WHERE r.title = 'Manager';
+        SELECT first_name || ' ' || last_name AS manager_name
+        FROM employee
+        WHERE manager_id IS NULL;
     `;
     const result: QueryResult = await pool.query(query);
     return result.rows.map(row => row.manager_name);
@@ -106,14 +105,13 @@ const addDepartment = (): void => {
 }
 
 const addEmployee = async (): Promise<void> => {
-
     const managers = await getManagers();
-
     const roles = await getRoles();
 
     const addEmployeeQuery = `
     INSERT INTO employee (first_name, last_name, role_id, manager_id)
-    VALUES ($1, $2, $3, $4);
+    VALUES ($1, $2, (SELECT id FROM role WHERE title = $3 LIMIT 1), 
+    (SELECT id FROM employee WHERE first_name = $4 AND last_name = $5 LIMIT 1));
     `;
 
     inquirer
@@ -136,24 +134,24 @@ const addEmployee = async (): Promise<void> => {
         },
         {
             type: 'list',
-            name: 'employeeManager',
+            name: 'manager',
             message: 'Who is the employee\'s manager?',
             choices: managers
         }
     ])
-    .then((answers) => {
-        const { firstName, lastName, employeeRole, employeeManager } = answers;
+    .then(async (answers) => {
+        const { firstName, lastName, employeeRole, manager } = answers;
+        const [managerFirstName, managerLastName] = manager.split(' ');
 
-        pool.query(addEmployeeQuery, [firstName, lastName, employeeRole, employeeManager], (err: Error, _res: QueryResult) => {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log(`Added ${firstName} ${lastName} to the database.`);
-            }
-            performActions();
-        });
+        try {
+            await pool.query(addEmployeeQuery, [firstName, lastName, employeeRole, managerFirstName, managerLastName]);
+            console.log('Employee added successfully');
+        } catch (error) {
+            console.error('Error adding employee:', error);
+        }
+        performActions();
     });
-}
+};
 
 const updateEmployee = async (): Promise<void> => {
     const employees = await getEmployees();
