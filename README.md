@@ -24,6 +24,12 @@ In order to run and use this application, you must right click the db folder and
 <img src="./src/images/2.png" alt="running \i seeds.sql;" width="400">
 <img src="./src/images/3.png" alt="running the application" width="400">
 
+
+
+https://github.com/user-attachments/assets/f818ae15-2e9b-41c9-bb1e-2984a55b9a0f
+
+
+
 ## License
 This project is licensed under the [MIT](https://opensource.org/licenses/MIT) license.
 
