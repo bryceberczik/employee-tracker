@@ -1,39 +1,9 @@
 import inquirer from "inquirer";
 import { QueryResult } from 'pg';
 import { pool, connectToDb } from './connection.js';
+import { getDepartments, getRoles, getManagers, getEmployees } from "./helperFunctions.js";
 
 await connectToDb();
-
-const getDepartments = async (): Promise<string[]> => {
-    const query = 'SELECT name FROM department;';
-    const result: QueryResult = await pool.query(query);
-    return result.rows.map(row => row.name);
-};
-
-const getRoles = async (): Promise<string[]> => {
-    const query = 'SELECT title FROM role;';
-    const result: QueryResult = await pool.query(query);
-    return result.rows.map(row => row.title);
-};
-
-const getManagers = async (): Promise<string[]> => {
-    const query = `
-        SELECT first_name || ' ' || last_name AS manager_name
-        FROM employee
-        WHERE manager_id IS NULL;
-    `;
-    const result: QueryResult = await pool.query(query);
-    return result.rows.map(row => row.manager_name);
-};
-
-const getEmployees = async (): Promise<string[]> => {
-    const query = `
-        SELECT e.id, e.first_name || ' ' || e.last_name AS employee_name
-        FROM employee e;
-    `;
-    const result: QueryResult = await pool.query(query);
-    return result.rows.map(row => row.employee_name);
-};
 
 const addRole = async (): Promise<void> => {
 
@@ -239,33 +209,33 @@ const updateEmployeeManager = async (): Promise<void> => {
 
 const deleteEmployee = (): void => {
 
-    const employees = getEmployees(); 
+    const employees = getEmployees();
 
-                inquirer
-                    .prompt([
-                        {
-                            type: 'list',
-                            name: 'employeeId',
-                            message: 'Select an employee to delete:',
-                            choices: employees
-                        }
-                    ])
-                    .then((answers) => {
-                        const { employeeId } = answers;
-                        const [employeeFirstName, employeeLastName] = employeeId.split(' ');
-                        const deleteEmployeeQuery = `
-                            DELETE FROM employee WHERE first_name = $1 AND last_name = $2;;
+    inquirer
+        .prompt([
+            {
+                type: 'list',
+                name: 'employeeId',
+                message: 'Select an employee to delete:',
+                choices: employees
+            }
+        ])
+        .then((answers) => {
+            const { employeeId } = answers;
+            const [employeeFirstName, employeeLastName] = employeeId.split(' ');
+            const deleteEmployeeQuery = `
+                            DELETE FROM employee WHERE first_name = $1 AND last_name = $2;
                         `;
-            
-                        pool.query(deleteEmployeeQuery, [employeeFirstName, employeeLastName], (err: Error, _res: QueryResult) => {
-                            if (err) {
-                                console.error(err);
-                            } else {
-                                console.log('Employee deleted successfully.');
-                            }
-                            performActions();
-                        });
-                    });
+
+            pool.query(deleteEmployeeQuery, [employeeFirstName, employeeLastName], (err: Error, _res: QueryResult) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('Employee deleted successfully.');
+                }
+                performActions();
+            });
+        });
 }
 
 const performActions = (): void => {
@@ -408,13 +378,13 @@ const performActions = (): void => {
 
                     deleteEmployee();
                     break;
-                    case 'Delete Role':
+                case 'Delete Role':
 
 
                     break;
-                    case 'Delete Department':
+                case 'Delete Department':
 
-                
+
                     break;
                 case 'Quit':
                     process.exit(0);
