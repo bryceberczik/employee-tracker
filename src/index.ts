@@ -207,9 +207,9 @@ const updateEmployeeManager = async (): Promise<void> => {
         });
 };
 
-const deleteEmployee = (): void => {
+const deleteEmployee = async (): Promise<void> => {
 
-    const employees = getEmployees();
+    const employees = await getEmployees();
 
     inquirer
         .prompt([
@@ -224,7 +224,7 @@ const deleteEmployee = (): void => {
             const { employeeId } = answers;
             const [employeeFirstName, employeeLastName] = employeeId.split(' ');
             const deleteEmployeeQuery = `
-                            DELETE FROM employee WHERE first_name = $1 AND last_name = $2;
+                            DELETE FROM employee WHERE id = (SELECT id FROM employee WHERE first_name = $1 AND last_name = $2 LIMIT 1);
                         `;
 
             pool.query(deleteEmployeeQuery, [employeeFirstName, employeeLastName], (err: Error, _res: QueryResult) => {
@@ -236,7 +236,134 @@ const deleteEmployee = (): void => {
                 performActions();
             });
         });
-}
+};
+
+const deleteRole = async (): Promise<void> => {
+
+    const roles = await getRoles();
+
+    inquirer
+    .prompt([
+        {
+            type: 'list',
+            name: 'roleId',
+            message: 'Select a role to delete:',
+            choices: roles
+        }
+    ])
+    .then((answers) => {
+        const { roleId } = answers;
+        const deleteRoleQuery = `
+                DELETE FROM role
+                WHERE id = (SELECT id FROM role WHERE title = $1 LIMIT 1);
+            `;
+            pool.query(deleteRoleQuery, [roleId], (err: Error, _res: QueryResult) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('Role deleted successfully.');
+                }
+                performActions();
+            });
+    })
+};
+
+const deleteDepartment = async (): Promise<void> => {
+
+    const departments = await getDepartments();
+
+    inquirer
+    .prompt([
+        {
+            type: 'list',
+            name: 'departmentId',
+            message: 'Select a department to delete:',
+            choices: departments
+        }
+    ])
+    .then((answers) => {
+        const { departmentId } = answers;
+        const deleteDepartmentQuery = `
+                DELETE FROM department
+                WHERE id = (SELECT id FROM department WHERE name = $1);`
+                pool.query(deleteDepartmentQuery, [departmentId], (err: Error, _res: QueryResult) => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        console.log('Department deleted successfully.');
+                    }
+                    performActions();
+                });
+    })
+};
+
+const viewEmployeesByManager = async (): Promise<void> => {
+    try {
+        const managers = await getManagers();
+
+        const answers = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'managerName',
+                message: 'Select a manager to view their employees:',
+                choices: managers
+            }
+        ]);
+
+        const { managerName } = answers;
+        const [firstName, lastName] = managerName.split(' ');
+
+        const query = `
+            SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department
+            FROM employee e
+            JOIN role r ON e.role_id = r.id
+            JOIN department d ON r.department_id = d.id
+            JOIN employee m ON e.manager_id = m.id
+            WHERE m.first_name = $1 AND m.last_name = $2;
+        `;
+
+        const result = await pool.query(query, [firstName, lastName]);
+
+        console.table(result.rows);
+    } catch (error) {
+        console.error('Error viewing employees by manager:', error);
+    } finally {
+        performActions();
+    }
+};
+
+const viewEmployeesByDepartment = async (): Promise<void> => {
+    try {
+        const departments = await getDepartments();
+
+        const answers = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'departmentName',
+                message: 'Select a department to view its employees:',
+                choices: departments
+            }
+        ]);
+
+        const { departmentName } = answers;
+
+        const query = `
+            SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department
+            FROM employee e
+            JOIN role r ON e.role_id = r.id
+            JOIN department d ON r.department_id = d.id
+            WHERE d.name = $1;
+        `;
+
+        const result = await pool.query(query, [departmentName]);
+
+        console.table(result.rows);
+    } catch (error) {
+        console.error('Error viewing employees by department:', error);
+    } finally {
+        performActions();
+    }
+};
 
 const performActions = (): void => {
 
@@ -259,6 +386,8 @@ const performActions = (): void => {
                     'Delete Employee',
                     'Delete Role',
                     'Delete Department',
+                    'View Employees By Manager',
+                    'View Employees By Department',
                     'Quit'
                 ],
             },
@@ -380,11 +509,21 @@ const performActions = (): void => {
                     break;
                 case 'Delete Role':
 
+                    deleteRole();
 
                     break;
                 case 'Delete Department':
 
+                    deleteDepartment();
 
+                    break;
+                case 'View Employees By Manager':
+
+                    viewEmployeesByManager();
+                    break;
+                case 'View Employees By Department':
+
+                    viewEmployeesByDepartment();
                     break;
                 case 'Quit':
                     process.exit(0);

@@ -20,6 +20,10 @@ In order to use this application, you must install node.js as well as postgresql
 ## Usage
 In order to run and use this application, you must right click the db folder and run the scheme.sql and seeds.sql using the commands \i schema.sql etc. in order to access the postgres CLI you must type in psql -U postgres and enter your pass word. Optionally, you can choose to have a blank slate. Right click the src folder and open intergrated terminal, and run the command, "npm run start" this will run the application and you can add departments, roles, and employees, even managers to start your companys database.
 
+<img src="./src/images/1.png" alt="running \i schema.sql;" width="400">
+<img src="./src/images/2.png" alt="running \i seeds.sql;" width="400">
+<img src="./src/images/3.png" alt="running the application" width="400">
+
 ## License
 This project is licensed under the [MIT](https://opensource.org/licenses/MIT) license.
 
